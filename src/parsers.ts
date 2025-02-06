@@ -413,8 +413,6 @@ export class CommentParser {
         })
         .reduce((acc, curr) => ({ ...acc, ...curr }), {}),
     }
-    // console.dir(o, { depth: null });
-    // console.log(json);
     return o
   }
 
@@ -748,8 +746,6 @@ export class ValidatorParser {
     this.exampleGenerator = new ExampleGenerator({})
   }
   async validatorToObject(validator: VineValidator<any, any>) {
-    // console.dir(validator.toJSON()["refs"], { depth: null });
-    // console.dir(json, { depth: null });
     const obj = {
       type: 'object',
       properties: this.parseSchema(
@@ -757,13 +753,11 @@ export class ValidatorParser {
         validator.toJSON()['refs']
       ),
     }
-    // console.dir(obj, { depth: null });
     const testObj = this.objToTest(obj['properties'])
     return await this.parsePropsAndMeta(obj, testObj, validator)
   }
 
   async parsePropsAndMeta(obj, testObj, validator: VineValidator<any, any>) {
-    // console.log(Object.keys(errors));
     const { SimpleMessagesProvider } = await import('@vinejs/vine')
     const [e] = await validator.tryValidate(testObj, {
       messagesProvider: new SimpleMessagesProvider({
@@ -831,7 +825,6 @@ export class ValidatorParser {
       }
     }
 
-    // console.dir(obj, { depth: null });
     obj['example'] = testObj
     return obj
   }
@@ -877,10 +870,6 @@ export class ValidatorParser {
           meta = { ...meta, pattern: refs[v['ruleFnId']].options.toString() }
         }
       }
-
-      // console.dir(p, { depth: null });
-      // console.dir(validations, { depth: null });
-      // console.log(min, max, choices, regex);
 
       obj[p['fieldName']] =
         p['type'] === 'object'
