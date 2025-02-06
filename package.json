@@ -1,0 +1,50 @@
+{
+  "name": "adonis-autoswagger",
+  "version": "3.65.0",
+  "description": "Auto-Generate swagger docs for AdonisJS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "watchexec -e ts -- tsc",
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "author": "Adis Durakovic <adis.durakovic@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/retronew/adonis-autoswagger"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@vinejs/vine": "^3.0.0",
+    "abstract-syntax-tree": "^2.22.0",
+    "change-case": "^5.4.4",
+    "espree": "^10.3.0",
+    "extract-comments": "^1.1.0",
+    "http-status": "^2.1.0",
+    "json-to-pretty-yaml": "^1.2.2",
+    "lodash": "^4.17.21",
+    "parse-imports": "^2.2.1",
+    "typescript": "^5.7.3",
+    "typescript-parser": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.15",
+    "@types/node": "^22.13.1"
+  },
+  "files": [
+    "/dist"
+  ],
+  "prettier": {
+    "trailingComma": "es5",
+    "semi": false,
+    "useTabs": false,
+    "quoteProps": "consistent",
+    "singleQuote": true,
+    "bracketSpacing": true,
+    "arrowParens": "always"
+  },
+  "packageManager": "pnpm@9.15.4"
+}
