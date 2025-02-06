@@ -1,4 +1,4 @@
-import { camelCase, startCase } from 'lodash'
+import { camelCase, startCase } from 'es-toolkit'
 
 export function isJSONString(str: string): boolean {
   try {

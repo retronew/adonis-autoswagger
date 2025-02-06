@@ -1,13 +1,11 @@
 import YAML from 'json-to-pretty-yaml'
-import fs from 'fs'
-import path from 'path'
-import util from 'util'
+import path from 'node:path'
 import { status } from 'http-status'
-import { uniq, isEmpty, isUndefined } from 'lodash'
-import { access } from 'node:fs/promises'
+import { uniq, isUndefined } from 'es-toolkit'
+import { isEmpty } from 'es-toolkit/compat'
+import { access, readdir, readFile, writeFile } from 'node:fs/promises'
 import { serializeMiddleware, serializeHandler } from './adonishelpers.js'
 import {
-  InterfaceParser,
   ModelParser,
   CommentParser,
   RouteParser,
@@ -16,7 +14,7 @@ import {
 import elysiajs from './css/elysiajs.js'
 import type { options, AdonisRoutes, Handler, AdonisRoute } from './types.js'
 import { mergeParams, formatOperationId } from './helpers.js'
-import ExampleGenerator, { ExampleInterfaces } from './example.js'
+import ExampleGenerator from './example.js'
 import { VineValidator } from '@vinejs/vine'
 
 export class AutoSwagger {
@@ -24,7 +22,6 @@ export class AutoSwagger {
   private schemas = {}
   private commentParser: CommentParser
   private modelParser: ModelParser
-  private interfaceParser: InterfaceParser
   private routeParser: RouteParser
   private validatorParser: ValidatorParser
   private customPaths = {}
@@ -111,13 +108,13 @@ export class AutoSwagger {
     const filePath = options.path + 'swagger.yml'
     const filePathJson = options.path + 'swagger.json'
 
-    fs.writeFileSync(filePath, contents)
-    fs.writeFileSync(filePathJson, JSON.stringify(json, null, 2))
+    await writeFile(filePath, contents)
+    await writeFile(filePathJson, JSON.stringify(json, null, 2))
   }
 
   private async readFile(rootPath, type = 'yml') {
     const filePath = rootPath + 'swagger.' + type
-    const data = fs.readFileSync(filePath, 'utf-8')
+    const data = await readFile(filePath, 'utf-8')
     if (!data) {
       console.error('Error reading file')
       return
@@ -146,7 +143,7 @@ export class AutoSwagger {
     this.options.appPath = this.options.path + 'app'
 
     try {
-      const pj = fs.readFileSync(path.join(this.options.path, 'package.json'))
+      const pj = await readFile(path.join(this.options.path, 'package.json'))
 
       const pjson = JSON.parse(pj.toString())
       if (pjson.imports) {
@@ -164,7 +161,6 @@ export class AutoSwagger {
     this.commentParser = new CommentParser(this.options)
     this.routeParser = new RouteParser(this.options)
     this.modelParser = new ModelParser(this.options.snakeCase)
-    this.interfaceParser = new InterfaceParser(this.options.snakeCase)
     this.validatorParser = new ValidatorParser()
     this.schemas = await this.getSchemas()
     if (this.options.debug) {
@@ -539,7 +535,6 @@ export class AutoSwagger {
     const modelSchemas = await this.getModels()
     schemas = { ...schemas, ...modelSchemas }
 
-    this.interfaceParser = new InterfaceParser(this.options.snakeCase, schemas)
     const validatorSchemas = await this.getValidators()
     schemas = { ...schemas, ...validatorSchemas }
 
@@ -626,7 +621,6 @@ export class AutoSwagger {
       }
     }
     const files = await this.getFiles(modelPath, [])
-    const readFile = util.promisify(fs.readFile)
     if (this.options.debug) {
       console.log('Found model files', files)
     }
@@ -652,18 +646,21 @@ export class AutoSwagger {
     return models
   }
 
-  private async getFiles(dir, files_) {
-    const fs = require('fs')
-    files_ = files_ || []
-    var files = await fs.readdirSync(dir)
-    for (let i in files) {
-      var name = dir + '/' + files[i]
-      if (fs.statSync(name).isDirectory()) {
-        await this.getFiles(name, files_)
+  private async getFiles(
+    dir: string,
+    files_: string[] = []
+  ): Promise<string[]> {
+    const entries = await readdir(dir, { withFileTypes: true })
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        await this.getFiles(fullPath, files_)
       } else {
-        files_.push(name)
+        files_.push(fullPath)
       }
     }
+
     return files_
   }
 }
