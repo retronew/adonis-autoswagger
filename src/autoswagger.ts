@@ -369,30 +369,8 @@ export class AutoSwagger {
           }
         }
 
-        if (action !== '' && summary === '') {
-          // Solve toLowerCase undefined exception
-          // https://github.com/retronew/adonis-autoswagger/issues/28
-          tags[0] = tags[0] ?? ''
-
-          switch (action) {
-            case 'index':
-              summary = 'Get a list of ' + tags[0].toLowerCase()
-              break
-            case 'show':
-              summary = 'Get a single instance of ' + tags[0].toLowerCase()
-              break
-            case 'update':
-              summary = 'Update ' + tags[0].toLowerCase()
-              break
-            case 'destroy':
-              summary = 'Delete ' + tags[0].toLowerCase()
-              break
-          }
-        }
-
-        const sf = sourceFile.split('/').at(-1).replace('.ts', '')
-        let m = {
-          summary: `${summary}${action !== '' ? ` (${action})` : 'route'}`,
+        const m = {
+          summary,
           description:
             description + '\n\n _' + sourceFile + '_ - **' + action + '**',
           operationId: operationId,
