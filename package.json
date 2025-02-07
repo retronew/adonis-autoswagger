@@ -1,6 +1,6 @@
 {
   "name": "@retronew/adonis-autoswagger",
-  "version": "3.68.4",
+  "version": "3.70.0",
   "description": "Auto-Generate swagger docs for AdonisJS",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,8 +14,7 @@
     "dev": "watchexec -e ts -- tsc",
     "build": "tsc",
     "prepare": "npm run build",
-    "prepublishOnly": "npm version patch",
-    "publish": "npm publish"
+    "prepublishOnly": "npm version patch"
   },
   "author": "Adis Durakovic <adis.durakovic@gmail.com>",
   "repository": {

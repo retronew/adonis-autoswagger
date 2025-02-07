@@ -23,15 +23,17 @@ export class CommentParser {
     let summary = ''
     let tag = ''
     let description = ''
-    let operationId
+    let operationId = ''
     let responses = {}
-    let requestBody
+    let requestBody = {}
     let parameters = {}
     let headers = {}
+
     lines.forEach((line) => {
       if (line.startsWith('@summary')) {
         summary = line.replace('@summary ', '')
       }
+
       if (line.startsWith('@tag')) {
         tag = line.replace('@tag ', '')
       }
@@ -50,6 +52,7 @@ export class CommentParser {
           ...this.parseResponseBody(line),
         }
       }
+
       if (line.startsWith('@responseHeader')) {
         const header = this.parseResponseHeader(line)
         if (header === null) {
@@ -61,28 +64,26 @@ export class CommentParser {
           ...header['header'],
         }
       }
+
       if (line.startsWith('@requestBody')) {
         requestBody = this.parseBody(line, 'requestBody')
       }
+
       if (line.startsWith('@requestFormDataBody')) {
         const parsedBody = this.parseRequestFormDataBody(line)
         if (parsedBody) {
           requestBody = parsedBody
         }
       }
+
       if (line.startsWith('@param')) {
         parameters = { ...parameters, ...this.parseParam(line) }
       }
     })
 
-    for (const [key, value] of Object.entries(responses)) {
+    for (const [key, _value] of Object.entries(responses)) {
       if (typeof headers[key] !== undefined) {
         responses[key]['headers'] = headers[key]
-      }
-      if (!responses[key]['description']) {
-        responses[key]['description'] = `Returns **${key}** (${
-          status?.[key] ?? ''
-        }) as **${Object.entries(responses[key]['content'])[0][0]}**`
       }
     }
 
