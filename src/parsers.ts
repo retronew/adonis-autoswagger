@@ -175,6 +175,13 @@ export class CommentParser {
       delete parameter.schema.enum
     }
 
+    if (
+      typeof defaultParam.exampleValue === 'undefined' ||
+      defaultParam.exampleValue === null
+    ) {
+      delete parameter.schema.example
+    }
+
     return { [parameterName]: parameter }
   }
 
