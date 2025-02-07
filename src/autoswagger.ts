@@ -1,4 +1,4 @@
-import YAML from 'json-to-pretty-yaml'
+import yaml from 'js-yaml'
 import path from 'node:path'
 import { status } from 'http-status'
 import { uniq, isUndefined } from 'es-toolkit'
@@ -11,7 +11,7 @@ import {
   RouteParser,
   ValidatorParser,
 } from './parsers.js'
-import elysiajs from './css/elysiajs.js'
+import elysiajs from './scalar/elysiajs.js'
 import type { options, AdonisRoutes, Handler, AdonisRoute } from './types.js'
 import { mergeParams, formatOperationId } from './helpers.js'
 import ExampleGenerator from './example.js'
@@ -92,7 +92,7 @@ export class AutoSwagger {
   }
 
   jsonToYaml(json: any) {
-    return YAML.stringify(json)
+    return yaml.dump(json)
   }
 
   async json(routes: any, options: options) {
@@ -112,7 +112,7 @@ export class AutoSwagger {
     await writeFile(filePathJson, JSON.stringify(json, null, 2))
   }
 
-  private async readFile(rootPath, type = 'yml') {
+  private async readFile(rootPath: string, type = 'yml') {
     const filePath = rootPath + 'swagger.' + type
     const data = await readFile(filePath, 'utf-8')
     if (!data) {
@@ -131,23 +131,23 @@ export class AutoSwagger {
 
   private async generate(adonisRoutes: AdonisRoutes, options: options) {
     this.options = {
-      ...{
-        snakeCase: true,
-        preferredPutPatch: 'PUT',
-        debug: false,
-      },
+      snakeCase: true,
+      preferredPutPatch: 'PUT',
+      debug: false,
       ...options,
     }
 
     const routes = adonisRoutes.root
     this.options.appPath = this.options.path + 'app'
 
+    // Fill customPaths with imports from package.json
     try {
-      const pj = await readFile(path.join(this.options.path, 'package.json'))
+      const packageJsonPath = path.join(this.options.path, 'package.json')
+      const packageJsonFile = await readFile(packageJsonPath)
+      const packageJson = JSON.parse(packageJsonFile.toString())
 
-      const pjson = JSON.parse(pj.toString())
-      if (pjson.imports) {
-        Object.entries(pjson.imports).forEach(([key, value]) => {
+      if (packageJson.imports) {
+        Object.entries(packageJson.imports).forEach(([key, value]) => {
           const k = (key as string).replaceAll('/*', '')
           this.customPaths[k] = (value as string)
             .replaceAll('/*.js', '')
@@ -525,24 +525,29 @@ export class AutoSwagger {
 
   private async getValidators() {
     const validators = {}
-    let p6 = path.join(this.options.appPath, 'validators')
+    let pathValidators = path.join(this.options.appPath, 'validators')
 
     if (typeof this.customPaths['#validators'] !== 'undefined') {
-      // it's v6
-      p6 = p6.replaceAll('app/validators', this.customPaths['#validators'])
-      p6 = p6.replaceAll('app\\validators', this.customPaths['#validators'])
+      pathValidators = pathValidators.replaceAll(
+        'app/validators',
+        this.customPaths['#validators']
+      )
+      pathValidators = pathValidators.replaceAll(
+        'app\\validators',
+        this.customPaths['#validators']
+      )
     }
 
     try {
-      await access(p6)
+      await access(pathValidators)
     } catch (error) {
       if (this.options.debug) {
-        console.log("Validators paths don't exist", p6)
+        console.log("Validators paths don't exist", pathValidators)
       }
       return validators
     }
 
-    const files = await this.getFiles(p6, [])
+    const files = await this.getFiles(pathValidators, [])
     if (this.options.debug) {
       console.log('Found validator files', files)
     }
@@ -575,33 +580,33 @@ export class AutoSwagger {
 
   private async getModels() {
     const models = {}
-    let p = path.join(this.options.appPath, 'Models')
-    let p6 = path.join(this.options.appPath, 'models')
+    let pathModels = path.join(this.options.appPath, 'models')
 
     if (typeof this.customPaths['#models'] !== 'undefined') {
-      // it's v6
-      p6 = p6.replaceAll('app/models', this.customPaths['#models'])
-      p6 = p6.replaceAll('app\\models', this.customPaths['#models'])
+      pathModels = pathModels.replaceAll(
+        'app/models',
+        this.customPaths['#models']
+      )
+      pathModels = pathModels.replaceAll(
+        'app\\models',
+        this.customPaths['#models']
+      )
     }
 
-    let modelPath = p
     try {
-      await access(p)
+      await access(pathModels)
     } catch {
-      try {
-        await access(p6)
-        modelPath = p6
-      } catch {
-        if (this.options.debug) {
-          console.log("Model paths don't exist", p, p6)
-        }
-        return models
+      if (this.options.debug) {
+        console.log("Model paths don't exist", pathModels)
       }
+      return models
     }
-    const files = await this.getFiles(modelPath, [])
+
+    const files = await this.getFiles(pathModels, [])
     if (this.options.debug) {
       console.log('Found model files', files)
     }
+
     for (let file of files) {
       file = file.replace('.js', '')
       const data = await readFile(file, 'utf8')

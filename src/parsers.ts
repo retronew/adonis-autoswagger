@@ -247,12 +247,23 @@ export class CommentParser {
   }
 
   private parseResponseBody(responseLine: string) {
-    let responses = {}
+    const responses = {}
     const line = responseLine.replace('@responseBody ', '')
-    let [status, res, desc] = line.split(' - ')
+    let [status, res, description] = line.split(' - ')
     if (typeof status === 'undefined') return
+
+    if (typeof res === 'undefined') {
+      responses[status] = {}
+      return responses
+    }
+
+    if (typeof description === 'undefined') {
+      responses[status] = this.parseBody(res, 'responseBody')
+      return responses
+    }
+
     responses[status] = this.parseBody(res, 'responseBody')
-    responses[status]['description'] = desc
+    responses[status]['description'] = description
     return responses
   }
 

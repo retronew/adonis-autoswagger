@@ -4,7 +4,12 @@
     "adonisjs",
     "autoswagger",
     "elysiajs",
+    "npmjs",
+    "retronew",
     "vinejs",
     "watchexec"
-  ]
+  ],
+  
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
 }
