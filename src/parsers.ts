@@ -131,8 +131,24 @@ export class CommentParser {
       line = line.replace(locationMatch[0] + ' ', '')
     }
 
-    const [parameterName, description = '', metadata] = line.split(' - ')
+    const parts = line.split(' - ')
+    const parameterName = parts[0]
     if (!parameterName) return
+
+    let description = ''
+    let metadata = ''
+
+    if (parts.length === 2) {
+      const second = parts[1]
+      if (second.includes('@')) {
+        metadata = second
+      } else {
+        description = second
+      }
+    } else if (parts.length === 3) {
+      description = parts[1]
+      metadata = parts[2]
+    }
 
     if (metadata) {
       if (metadata.includes('@required')) {
