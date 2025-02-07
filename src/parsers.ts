@@ -77,7 +77,10 @@ export class CommentParser {
       }
 
       if (line.startsWith('@param')) {
-        parameters = { ...parameters, ...this.parseParam(line) }
+        parameters = {
+          ...parameters,
+          ...this.parseParam(line),
+        }
       }
     })
 
@@ -99,80 +102,80 @@ export class CommentParser {
   }
 
   private parseParam(line: string) {
-    let where = 'path'
-    let required = true
-    let type = 'string'
-    let example: any = null
-    let enums = []
+    const defaultParam = {
+      parameterLocation: 'path',
+      isRequired: false,
+      dataType: 'string',
+      exampleValue: null,
+      enumValues: [],
+    }
 
     if (line.startsWith('@paramUse')) {
-      let use = getBetweenBrackets(line, 'paramUse')
-      const used = use.split(',')
-      let h = []
-      used.forEach((u) => {
-        if (typeof this.options.common.parameters[u] === 'undefined') {
-          return
+      const usePattern = getBetweenBrackets(line, 'paramUse')
+      const usedParameters = usePattern.split(',')
+      const resolvedParameters = []
+
+      usedParameters.forEach((paramName) => {
+        const commonParam = this.options.common.parameters[paramName]
+        if (commonParam) {
+          resolvedParameters.push(...commonParam)
         }
-        const common = this.options.common.parameters[u]
-        h = [...h, ...common]
       })
 
-      return h
+      return resolvedParameters
     }
 
-    if (line.startsWith('@paramPath')) {
-      required = false
-    }
-    if (line.startsWith('@paramQuery')) {
-      required = false
-    }
-
-    let m = line.match('@param([a-zA-Z]*)')
-    if (m !== null) {
-      where = m[1].toLowerCase()
-      line = line.replace(m[0] + ' ', '')
+    const locationMatch = line.match('@param([a-zA-Z]*)')
+    if (locationMatch) {
+      defaultParam.parameterLocation = locationMatch[1].toLowerCase()
+      line = line.replace(locationMatch[0] + ' ', '')
     }
 
-    let [param, des, meta] = line.split(' - ')
-    if (typeof param === 'undefined') {
-      return
-    }
-    if (typeof des === 'undefined') {
-      des = ''
-    }
+    const [parameterName, description = '', metadata] = line.split(' - ')
+    if (!parameterName) return
 
-    if (typeof meta !== 'undefined') {
-      if (meta.includes('@required')) {
-        required = true
+    if (metadata) {
+      if (metadata.includes('@required')) {
+        defaultParam.isRequired = true
       }
-      let en = getBetweenBrackets(meta, 'enum')
-      example = getBetweenBrackets(meta, 'example')
-      const mtype = getBetweenBrackets(meta, 'type')
-      if (mtype !== '') {
-        type = mtype
+
+      const enumValues = getBetweenBrackets(metadata, 'enum')
+      const exampleValue = getBetweenBrackets(metadata, 'example')
+      const typeValue = getBetweenBrackets(metadata, 'type')
+
+      if (typeValue) {
+        defaultParam.dataType = typeValue
       }
-      if (en !== '') {
-        enums = en.split(',')
-        example = enums[0]
+
+      if (enumValues) {
+        defaultParam.enumValues = enumValues.split(',')
+        defaultParam.exampleValue = defaultParam.enumValues[0]
+      }
+
+      if (exampleValue) {
+        defaultParam.exampleValue = exampleValue
       }
     }
 
-    let p = {
-      in: where,
-      name: param,
-      description: des,
+    const parameter = {
+      in: defaultParam.parameterLocation,
+      name: parameterName,
+      description: description,
       schema: {
-        example: example,
-        type: type,
+        example: defaultParam.exampleValue,
+        type: defaultParam.dataType,
+        enum: defaultParam.enumValues,
       },
-      required: required,
+      required: defaultParam.isRequired,
     }
 
-    if (enums.length > 1) {
-      p['schema']['enum'] = enums
+    if (defaultParam.enumValues.length > 1) {
+      parameter.schema.enum = defaultParam.enumValues
+    } else {
+      delete parameter.schema.enum
     }
 
-    return { [param]: p }
+    return { [parameterName]: parameter }
   }
 
   private parseResponseHeader(responseLine: string) {
