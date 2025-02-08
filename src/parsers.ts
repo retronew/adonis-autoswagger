@@ -28,6 +28,7 @@ export class CommentParser {
     let requestBody = {}
     let parameters = {}
     let headers = {}
+    let requestQuery = {}
 
     lines.forEach((line) => {
       if (line.startsWith('@summary')) {
@@ -80,6 +81,16 @@ export class CommentParser {
         parameters = {
           ...parameters,
           ...this.parseParam(line),
+        }
+      }
+
+      if (line.startsWith('@requestQuery')) {
+        const queryParams = this.parseRequestQuery(line)
+        if (queryParams) {
+          parameters = {
+            ...parameters,
+            ...queryParams
+          }
         }
       }
     })
@@ -430,7 +441,7 @@ export class CommentParser {
               if (has(value, 'content.application/json.schema.items.$ref')) {
                 ref =
                   value['content']['application/json']['schema']['items'][
-                    '$ref'
+                  '$ref'
                   ]
               }
               value = {
@@ -485,6 +496,44 @@ export class CommentParser {
       })
     }
     return annotations
+  }
+
+  private parseRequestQuery(line: string) {
+    const rawLine = line.replace('@requestQuery ', '')
+    let parameters = {}
+
+    if (rawLine.startsWith('<') && rawLine.endsWith('>')) {
+      const validatorName = rawLine.substring(1, rawLine.length - 1)
+      const schema = this.exampleGenerator.schemas[validatorName]
+
+      if (!schema) {
+        console.warn(`Warning: Validator "${validatorName}" not found`)
+        return null
+      }
+
+      Object.entries(schema.properties).forEach(([key, value]: [string, any]) => {
+        parameters[key] = {
+          in: 'query',
+          name: key,
+          schema: {
+            type: value.type || 'string',
+            format: value.format,
+            enum: value.enum,
+            example: value.example,
+          },
+          required: schema.required?.includes(key) || false,
+          description: value.description || '',
+        }
+
+        Object.keys(parameters[key].schema).forEach(prop => {
+          if (parameters[key].schema[prop] === undefined) {
+            delete parameters[key].schema[prop]
+          }
+        })
+      })
+    }
+
+    return parameters
   }
 }
 
@@ -913,23 +962,23 @@ export class ValidatorParser {
         p['type'] === 'object'
           ? { type: 'object', properties: this.parseSchema(p, refs) }
           : p['type'] === 'array'
-          ? {
+            ? {
               type: 'array',
               items:
                 p['each']['type'] === 'object'
                   ? {
-                      type: 'object',
-                      properties: this.parseSchema(p['each'], refs),
-                    }
+                    type: 'object',
+                    properties: this.parseSchema(p['each'], refs),
+                  }
                   : {
-                      type: 'number',
-                      example: meta.minimum
-                        ? meta.minimum
-                        : this.exampleGenerator.exampleByType('number'),
-                      ...meta,
-                    },
+                    type: 'number',
+                    example: meta.minimum
+                      ? meta.minimum
+                      : this.exampleGenerator.exampleByType('number'),
+                    ...meta,
+                  },
             }
-          : {
+            : {
               type: 'number',
               example: meta.minimum
                 ? meta.minimum
