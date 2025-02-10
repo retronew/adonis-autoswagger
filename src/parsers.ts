@@ -854,6 +854,7 @@ export class ValidatorParser {
         number: 'TYPE',
         boolean: 'TYPE',
         enum: 'TYPE',
+        date: 'TYPE',
       }),
     })
 
