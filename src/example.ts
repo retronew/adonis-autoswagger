@@ -56,7 +56,7 @@ export default class ExampleGenerator {
     let app = {}
     try {
       app = JSON.parse('{' + append + '}')
-    } catch {}
+    } catch { }
 
     const cleanedRef = rawRef.replace('[]', '')
     let ex = Object.assign(
@@ -265,7 +265,7 @@ export default class ExampleGenerator {
     return props
   }
 
-  exampleByType(type) {
+  exampleByType(type, enumValues: string[] | number[] = []) {
     switch (type) {
       case 'string':
         return this.exampleByField('title')
@@ -281,9 +281,13 @@ export default class ExampleGenerator {
         return this.exampleByField('datetime')
       case 'date':
         return this.exampleByField('date')
+      case 'enum':
+        return enumValues[Math.floor(Math.random() * enumValues.length)]
       case 'object':
         return {}
       default:
+
+
         return null
     }
   }

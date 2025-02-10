@@ -853,6 +853,7 @@ export class ValidatorParser {
         object: 'TYPE',
         number: 'TYPE',
         boolean: 'TYPE',
+        enum: 'TYPE',
       }),
     })
 
@@ -872,11 +873,13 @@ export class ValidatorParser {
         objField = objField.replaceAll(`.0`, '.items')
       }
       if (err === 'TYPE') {
+        const example = this.exampleGenerator.exampleByType(m['rule'], m['rule'] === 'enum' ? m?.['meta']?.['choices'] ?? [] : [])
         set(obj['properties'], objField, {
           ...get(obj['properties'], objField),
           type: m['rule'],
-          example: this.exampleGenerator.exampleByType(m['rule']),
+          example: example,
         })
+
         if (m['rule'] === 'string') {
           if (get(obj['properties'], objField)['minimum']) {
             set(obj['properties'], objField, {
@@ -894,7 +897,7 @@ export class ValidatorParser {
           }
         }
 
-        set(testObj, m['field'], this.exampleGenerator.exampleByType(m['rule']))
+        set(testObj, m['field'], example)
       }
 
       if (err === 'FORMAT') {
