@@ -1,4 +1,3 @@
-import { status } from 'http-status'
 import { isJSONString, getBetweenBrackets } from './helpers.js'
 import extract from 'extract-comments'
 import { readFile } from 'node:fs/promises'
@@ -28,7 +27,6 @@ export class CommentParser {
     let requestBody = {}
     let parameters = {}
     let headers = {}
-    let requestQuery = {}
 
     lines.forEach((line) => {
       if (line.startsWith('@summary')) {
@@ -85,7 +83,7 @@ export class CommentParser {
       }
 
       if (line.startsWith('@requestQuery')) {
-        const queryParams = this.parseRequestQuery(line)
+        const queryParams = this.parseBody(line, 'requestQuery')
         if (queryParams) {
           parameters = {
             ...parameters,
@@ -496,44 +494,6 @@ export class CommentParser {
       })
     }
     return annotations
-  }
-
-  private parseRequestQuery(line: string) {
-    const rawLine = line.replace('@requestQuery ', '')
-    let parameters = {}
-
-    if (rawLine.startsWith('<') && rawLine.endsWith('>')) {
-      const validatorName = rawLine.substring(1, rawLine.length - 1)
-      const schema = this.exampleGenerator.schemas[validatorName]
-
-      if (!schema) {
-        console.warn(`Warning: Validator "${validatorName}" not found`)
-        return null
-      }
-
-      Object.entries(schema.properties).forEach(([key, value]: [string, any]) => {
-        parameters[key] = {
-          in: 'query',
-          name: key,
-          schema: {
-            type: value.type || 'string',
-            format: value.format,
-            enum: value.enum,
-            example: value.example,
-          },
-          required: schema.required?.includes(key) || false,
-          description: value.description || '',
-        }
-
-        Object.keys(parameters[key].schema).forEach(prop => {
-          if (parameters[key].schema[prop] === undefined) {
-            delete parameters[key].schema[prop]
-          }
-        })
-      })
-    }
-
-    return parameters
   }
 }
 
