@@ -83,7 +83,7 @@ export class CommentParser {
       }
 
       if (line.startsWith('@requestQuery')) {
-        const queryParams = this.parseBody(line, 'requestQuery')
+        const queryParams = this.parseRequestQuery(line)
         if (queryParams) {
           parameters = {
             ...parameters,
@@ -395,6 +395,44 @@ export class CommentParser {
     return this.exampleGenerator.parseRef(line)
   }
 
+  private parseRequestQuery(line: string) {
+    const rawLine = line.replace('@requestQuery ', '')
+    let parameters = {}
+
+    if (rawLine.startsWith('<') && rawLine.endsWith('>')) {
+      const validatorName = rawLine.substring(1, rawLine.length - 1)
+      const schema = this.exampleGenerator.schemas[validatorName]
+
+      if (!schema) {
+        console.warn(`Warning: Validator "${validatorName}" not found`)
+        return null
+      }
+
+      Object.entries(schema.properties).forEach(([key, value]: [string, any]) => {
+        parameters[key] = {
+          in: 'query',
+          name: key,
+          schema: {
+            type: value.type || 'string',
+            format: value.format,
+            enum: value.enum,
+            example: value.example,
+          },
+          required: schema.required?.includes(key) || false,
+          description: value.description || '',
+        }
+
+        Object.keys(parameters[key].schema).forEach(prop => {
+          if (parameters[key].schema[prop] === undefined) {
+            delete parameters[key].schema[prop]
+          }
+        })
+      })
+    }
+
+    return parameters
+  }
+
   arrayItems(json) {
     const oneOf = []
 
@@ -607,7 +645,7 @@ export class ModelParser {
       let s2 = s[1].replace(/;/g, '').split(':')
 
       let field = s2[0]
-      let type = s2[1]
+      let type = s2[1] || ''
       type = type.trim()
       let enums = []
       let format = ''
